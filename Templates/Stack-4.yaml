@@ -1,0 +1,1153 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "AWS CloudFormation template for Using GenAI on AWS for private files workshop.",
+  "Parameters": {
+    "WorkshopInstanceType": {
+      "Description": "Workshop Cloud9 instance type",
+      "Type": "String",
+      "Default": "m5.large",
+      "AllowedValues": [
+        "t2.micro",
+        "t3.micro",
+        "t3.small",
+        "t3.medium",
+        "m5.large"
+      ],
+      "ConstraintDescription": "Must be a valid  Cloud9 instance type"
+    },
+    "WorkshopInstanceOwner": {
+      "Type": "String",
+      "Description": "Assumed Role and Username of Cloud9 Owner, e.g. for EE - TeamRole/MasterKey or Isengard - Superuser/username-Isengard",
+      "Default": "WSParticipantRole"
+    }
+  },
+  "Mappings": {
+    "AssetsMap": {
+      "eu-north-1": {
+        "AssetBucket": "ws-assets-prod-iad-r-arn-580aeca3990cef5a"
+      },
+      "ap-south-1": {
+        "AssetBucket": "ws-assets-prod-iad-r-bom-431207042d319a2d"
+      },
+      "eu-west-3": {
+        "AssetBucket": "ws-assets-prod-iad-r-cdg-9e76383c31ad6229"
+      },
+      "us-east-2": {
+        "AssetBucket": "ws-assets-prod-iad-r-cmh-8d6e9c21a4dec77d"
+      },
+      "eu-west-1": {
+        "AssetBucket": "ws-assets-prod-iad-r-dub-85e3be25bd827406"
+      },
+      "eu-central-1": {
+        "AssetBucket": "ws-assets-prod-iad-r-fra-b129423e91500967"
+      },
+      "sa-east-1": {
+        "AssetBucket": "ws-assets-prod-iad-r-gru-527b8c19222c1182"
+      },
+      "us-east-1": {
+        "AssetBucket": "ws-assets-prod-iad-r-iad-ed304a55c2ca1aee"
+      },
+      "ap-northeast-2": {
+        "AssetBucket": "ws-assets-prod-iad-r-icn-ced060f0d38bc0b0"
+      },
+      "ap-northeast-3": {
+        "AssetBucket": "ws-assets-prod-iad-r-kix-c2a28ad4e55ea53a"
+      },
+      "eu-west-2": {
+        "AssetBucket": "ws-assets-prod-iad-r-lhr-cc4472a651221311"
+      },
+      "ap-northeast-1": {
+        "AssetBucket": "ws-assets-prod-iad-r-nrt-2cb4b4649d0e0f94"
+      },
+      "us-west-2": {
+        "AssetBucket": "ws-assets-prod-iad-r-pdx-f3b3f9f1a7d6a3d0"
+      },
+      "us-west-1": {
+        "AssetBucket": "ws-assets-prod-iad-r-sfo-f61fc67057535f1b"
+      },
+      "ap-southeast-1": {
+        "AssetBucket": "ws-assets-prod-iad-r-sin-694a125e41645312"
+      },
+      "ap-southeast-2": {
+        "AssetBucket": "ws-assets-prod-iad-r-syd-b04c62a5f16f7b2e"
+      },
+      "ca-central-1": {
+        "AssetBucket": "ws-assets-prod-iad-r-yul-5c2977cd61bca1f3"
+      }
+    }
+  },
+  "Outputs": {
+    "AuroraDBClusterARN": {
+      "Description": "ARN of the Aurora PostgreSQL cluster.",
+      "Value": {
+        "Fn::GetAtt": [
+          "WorkshopAuroraDBCluster",
+          "DBClusterArn"
+        ]
+      }
+    },
+    "AuroraDBWriterEndpoint": {
+      "Description": "Writer Endpoint of the Aurora PostgreSQL cluster.",
+      "Value": {
+        "Fn::GetAtt": [
+          "WorkshopAuroraDBCluster",
+          "Endpoint.Address"
+        ]
+      }
+    },
+    "WorkshopKendraIndexId": {
+      "Description": "Kendra Index ID",
+      "Value": {
+        "Ref": "WorkshopKendraIndex"
+      }
+    },
+    "WorkshopKendraIndexArn": {
+      "Description": "Kendra Index ARN",
+      "Value": {
+        "Fn::GetAtt": [
+          "WorkshopKendraIndex",
+          "Arn"
+        ]
+      }
+    },
+    "OpenSearchCollectionEndpoint": {
+      "Description": "OpenSearch Serverless Collection Endpoint",
+      "Value": {
+        "Fn::GetAtt": [
+          "WorkshopCollection",
+          "CollectionEndpoint"
+        ]
+      }
+    },
+    "WorkshopPostgreS3BucketName": {
+      "Description": "S3 bucket PostgreSQL",
+      "Value": {
+        "Ref": "WorkshopPostgreS3Bucket"
+      }
+    },
+    "WorkshopPostgreS3BucketARN": {
+      "Description": "ARN of the S3 Bucket",
+      "Value": {
+        "Fn::GetAtt": [
+          "WorkshopPostgreS3Bucket",
+          "Arn"
+        ]
+      }
+    },
+    "OpenSearchS3Bucket": {
+      "Description": "S3 bucket for OpenSearch",
+      "Value": {
+        "Ref": "OpenSearchS3Bucket"
+      }
+    },
+    "WorkshopRoleArn": {
+      "Description": "ARN of the WorkshopRole",
+      "Value": {
+        "Fn::GetAtt": [
+          "WorkshopRole",
+          "Arn"
+        ]
+      }
+    },
+    "RDSDBPassword": {
+      "Description": "The password for the RDS DB instance",
+      "Value": {
+        "Fn::Sub": "{{resolve:secretsmanager:${WorkshopPostgreRDSSecret}:SecretString:password}}"
+      }
+    },
+    "WorkshopOutputBucket": {
+      "Description": "S3 bucket for workshop",
+      "Value": {
+        "Ref": "WorkshopOutputBucket"
+      }
+    },
+    "MySQLEndpoint": {
+      "Description": "The endpoint of the MySQL RDS instance",
+      "Value": {
+        "Fn::GetAtt": [
+          "MySQLDBInstance",
+          "Endpoint.Address"
+        ]
+      }
+    },
+    "VpcId": {
+      "Description": "The VPC Id",
+      "Value": {
+        "Ref": "WorkshopVPC"
+      }
+    },
+    "AmazonBedrockExecutionRoleARN": {
+      "Description": "Amazon Bedrock Execution Role ARN",
+      "Value": {
+        "Fn::GetAtt": [
+          "AmazonBedrockExecutionRoleForKnowledgeBase",
+          "Arn"
+        ]
+      }
+    },
+    "OpenSearchCollectionArn": {
+      "Description": "OpenSearch Serverless Collection Endpoint",
+      "Value": {
+        "Fn::GetAtt": [
+          "WorkshopCollection",
+          "Arn"
+        ]
+      }
+    },
+    "OpenSearchS3BucketARN": {
+      "Description": "ARN of the S3 bucket for OpenSearch",
+      "Value": {
+        "Fn::GetAtt": [
+          "OpenSearchS3Bucket",
+          "Arn"
+        ]
+      }
+    },
+    "Cloud9IDE": {
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            "us-west-2",
+            ".console.aws.amazon.com/cloud9/ide/",
+            {
+              "Ref": "WorkshopInstance"
+            },
+            "?region=",
+            "us-west-2"
+          ]
+        ]
+      }
+    }
+  },
+  "Resources": {
+    "WorkshopRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "lambda.amazonaws.com",
+                  "kendra.amazonaws.com",
+                  "ec2.amazonaws.com",
+                  "ssm.amazonaws.com",
+                  "cloud9.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Path": "/service-role/",
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/AdministratorAccess",
+          "arn:aws:iam::aws:policy/AWSCloud9SSMInstanceProfile"
+        ]
+      }
+    },
+    "WorkshopVPC": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "10.0.0.0/16",
+        "EnableDnsSupport": "true",
+        "EnableDnsHostnames": "true"
+      }
+    },
+    "PublicSubnetA": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "WorkshopVPC"
+        },
+        "CidrBlock": "10.0.1.0/24",
+        "AvailabilityZone": {
+          "Fn::Select": [
+            "0",
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "MapPublicIpOnLaunch": "true"
+      }
+    },
+    "PublicSubnetB": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "WorkshopVPC"
+        },
+        "CidrBlock": "10.0.2.0/24",
+        "AvailabilityZone": {
+          "Fn::Select": [
+            "1",
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "MapPublicIpOnLaunch": "true"
+      }
+    },
+    "PrivateSubnetA": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "WorkshopVPC"
+        },
+        "CidrBlock": "10.0.3.0/24",
+        "AvailabilityZone": {
+          "Fn::Select": [
+            "2",
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "MapPublicIpOnLaunch": "false"
+      }
+    },
+    "PrivateSubnetB": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "WorkshopVPC"
+        },
+        "CidrBlock": "10.0.4.0/24",
+        "AvailabilityZone": {
+          "Fn::Select": [
+            "3",
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "MapPublicIpOnLaunch": "false"
+      }
+    },
+    "InternetGateway": {
+      "Type": "AWS::EC2::InternetGateway"
+    },
+    "AttachGateway": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "VpcId": {
+          "Ref": "WorkshopVPC"
+        },
+        "InternetGatewayId": {
+          "Ref": "InternetGateway"
+        }
+      }
+    },
+    "EIPForNAT": {
+      "Type": "AWS::EC2::EIP"
+    },
+    "NATGateway": {
+      "Type": "AWS::EC2::NatGateway",
+      "Properties": {
+        "AllocationId": {
+          "Fn::GetAtt": [
+            "EIPForNAT",
+            "AllocationId"
+          ]
+        },
+        "SubnetId": {
+          "Ref": "PublicSubnetA"
+        }
+      }
+    },
+    "PublicRouteTableA": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "WorkshopVPC"
+        }
+      }
+    },
+    "PublicRouteA": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "PublicRouteTableA"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "InternetGateway"
+        }
+      }
+    },
+    "PublicRouteTableB": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "WorkshopVPC"
+        }
+      }
+    },
+    "PublicRouteB": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "PublicRouteTableB"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "InternetGateway"
+        }
+      }
+    },
+    "PrivateRouteTableA": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "WorkshopVPC"
+        }
+      }
+    },
+    "PrivateRouteTableB": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "WorkshopVPC"
+        }
+      }
+    },
+    "PrivateRouteA": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "PrivateRouteTableA"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "NatGatewayId": {
+          "Ref": "NATGateway"
+        }
+      }
+    },
+    "PrivateRouteB": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "PrivateRouteTableB"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "NatGatewayId": {
+          "Ref": "NATGateway"
+        }
+      }
+    },
+    "PublicSubnetRouteTableAssociationA": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "PublicSubnetA"
+        },
+        "RouteTableId": {
+          "Ref": "PublicRouteTableA"
+        }
+      }
+    },
+    "PublicSubnetRouteTableAssociationB": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "PublicSubnetB"
+        },
+        "RouteTableId": {
+          "Ref": "PublicRouteTableB"
+        }
+      }
+    },
+    "PrivateSubnetARouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "PrivateSubnetA"
+        },
+        "RouteTableId": {
+          "Ref": "PrivateRouteTableA"
+        }
+      }
+    },
+    "PrivateSubnetBRouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "PrivateSubnetB"
+        },
+        "RouteTableId": {
+          "Ref": "PrivateRouteTableB"
+        }
+      }
+    },
+    "VPCSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Security Group allowing all TCP traffic inbound and outbound",
+        "VpcId": {
+          "Ref": "WorkshopVPC"
+        },
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "0",
+            "ToPort": "65535",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ],
+        "SecurityGroupEgress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "0",
+            "ToPort": "65535",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "WorkshopLambdaExecutionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "lambda.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Path": "/",
+        "Policies": [
+          {
+            "PolicyName": "WorkshopLambdaPolicy-us-west-2",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": "arn:aws:logs:*:*:*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "cloudformation:DescribeStacks",
+                    "cloudformation:DescribeStackEvents",
+                    "cloudformation:DescribeStackResource",
+                    "cloudformation:DescribeStackResources",
+                    "ec2:DescribeInstances",
+                    "ec2:AssociateIamInstanceProfile",
+                    "ec2:ModifyInstanceAttribute",
+                    "ec2:DescribeIamInstanceProfileAssociations",
+                    "ec2:ReplaceIamInstanceProfileAssociation",
+                    "iam:ListInstanceProfiles",
+                    "ec2:RebootInstances"
+                  ],
+                  "Resource": "*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ec2:DescribeInstances",
+                    "ec2:AssociateIamInstanceProfile",
+                    "ec2:ModifyInstanceAttribute",
+                    "ec2:DescribeIamInstanceProfileAssociations",
+                    "ec2:ReplaceIamInstanceProfileAssociation",
+                    "ec2:RebootInstances",
+                    "iam:PassRole"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "WorkshopInstanceProfile",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::GetAtt": [
+                        "WorkshopRole",
+                        "Arn"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "WorkshopBootstrapInstanceLambda": {
+      "Type": "Custom::WorkshopBootstrapInstanceLambda",
+      "DependsOn": [
+        "WorkshopBootstrapInstanceLambdaFunction",
+        "WorkshopInstance",
+        "WorkshopInstanceProfile",
+        "WorkshopLambdaExecutionRole"
+      ],
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "AWS Workshop"
+          }
+        ],
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "WorkshopBootstrapInstanceLambdaFunction",
+            "Arn"
+          ]
+        },
+        "REGION": "us-west-2",
+        "StackName": "using-genai-for-private-files-workshop",
+        "EnvironmentId": {
+          "Ref": "WorkshopInstance"
+        },
+        "LabIdeInstanceProfileName": {
+          "Ref": "WorkshopInstanceProfile"
+        },
+        "LabIdeInstanceProfileArn": {
+          "Fn::GetAtt": [
+            "WorkshopInstanceProfile",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "WorkshopBootstrapInstanceLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "AWS Workshop"
+          }
+        ],
+        "Handler": "index.lambda_handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "WorkshopLambdaExecutionRole",
+            "Arn"
+          ]
+        },
+        "Runtime": "python3.9",
+        "MemorySize": 1024,
+        "Timeout": 600,
+        "Code": {
+          "ZipFile": "import boto3\nimport traceback\nimport cfnresponse\n\nimport logging\nlogger = logging.getLogger()\nlogger.setLevel(logging.INFO)\n\ndef restart_instance(instance_id):\n  logger.info('Restart EC2 instance to restart SSM Agent')\n  ec2 = boto3.client('ec2')\n\n  try:\n    response = ec2.reboot_instances(\n          InstanceIds=[\n              instance_id\n          ]\n    )\n  except Exception as e:\n      raise e\n\n  logger.info('response: %s', response)\n\ndef lambda_handler(event, context):\n  try:\n    logger.info('event: {}'.format(event))\n\n    # Steps to do on Cloudformation Delete Request\n    if event['RequestType'] == 'Delete':\n      logger.info('Received Delete Request')\n\n    # Steps to do on Cloudformation Update requests\n    if event['RequestType'] == 'Update':\n      logger.info('Received Update Request')\n\n    # Steps to do on Cloudformation Create requests\n    if event['RequestType'] == 'Create':\n      # Open AWS clients\n      ec2 = boto3.client('ec2')\n\n      # Get ec2.instancesCollection Information of the Cloud9 IDE Environment\n      instances = boto3.resource('ec2').instances.filter(Filters=[{'Name': 'tag:Name','Values': ['*' + event['ResourceProperties']['EnvironmentId']]}])\n\n      # Create the IamInstanceProfile request object\n      iam_instance_profile = {\n          'Arn': event['ResourceProperties']['LabIdeInstanceProfileArn'],\n          'Name': event['ResourceProperties']['LabIdeInstanceProfileName']\n      }\n\n      # attach instance profile\n      for instance in instances:\n        association = ec2.describe_iam_instance_profile_associations(Filters=[{'Name': 'instance-id', 'Values':[instance.id]}])\n        logger.info('Association count :' + str(len(association)))\n        logger.info(association)\n        if len(association['IamInstanceProfileAssociations'])>0:\n          association_id = association['IamInstanceProfileAssociations'][0]['AssociationId']\n          response = ec2.replace_iam_instance_profile_association(IamInstanceProfile=iam_instance_profile, AssociationId=association_id)\n        else:\n          response = ec2.associate_iam_instance_profile(IamInstanceProfile=iam_instance_profile, InstanceId=instance.id)\n        restart_instance(instance.id)\n        logger.info('Received Create Request - Completed for : ' + instance.id)\n\n  # Catch any exceptions\n  except Exception as e:\n      logger.error(e)\n      traceback.format_exc()\n\n  # Always respond back to Cloudformation so it isn't in excessive pending state\n  finally:\n    cfnresponse.send(event, context, cfnresponse.SUCCESS, {})\n"
+        }
+      }
+    },
+    "WorkshopOutputBucket": {
+      "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "Delete"
+    },
+    "WorkshopSSMDocument": {
+      "Type": "AWS::SSM::Document",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "AWS Workshop"
+          }
+        ],
+        "DocumentType": "Command",
+        "Content": {
+          "schemaVersion": "2.2",
+          "description": "Bootstrap Cloud9 Instance",
+          "mainSteps": [
+            {
+              "action": "aws:runShellScript",
+              "name": "Workshopbootstrap",
+              "inputs": {
+                "timeoutSeconds": "3600",
+                "runCommand": [
+                  "#!/bin/bash",
+                  "date",
+                  "echo LANG=en_US.utf-8 >> /etc/environment",
+                  "echo LC_ALL=en_US.UTF-8 >> /etc/environment",
+                  "echo '=== INSTALL and CONFIGURE default software components ==='",
+                  "yum -y remove awscli",
+                  ". /home/ec2-user/.bashrc",
+                  "export AWS_REGION=us-west-2",
+                  "export ACCOUNT_ID=460359947939",
+                  "echo \"export ACCOUNT_ID=${ACCOUNT_ID}\" | tee -a /home/ec2-user/.bash_profile",
+                  "echo \"export AWS_REGION=${AWS_REGION}\" | tee -a /home/ec2-user/.bash_profile",
+                  "mkdir -p /home/ec2-user/.aws\necho \"[default]\" > /home/ec2-user/.aws/config\necho \"output = json\" >> /home/ec2-user/.aws/config\necho \"region = ${AWS_REGION}\" >> /home/ec2-user/.aws/config\nchmod 600 /home/ec2-user/.aws/config\n",
+                  "echo \"export ACCOUNT_ID=${ACCOUNT_ID}\" | tee -a /home/ec2-user/.bash_profile",
+                  "echo \"export AWS_REGION=${AWS_REGION}\" | tee -a /home/ec2-user/.bash_profile",
+                  "echo 'aws cloud9 update-environment --environment-id $C9_PID --managed-credentials-action DISABLE --region $AWS_REGION &> /dev/null' | tee -a /home/ec2-user/.bash_profile",
+                  "echo 'rm -vf ${HOME}/.aws/credentials  &> /dev/null' | tee -a /home/ec2-user/.bash_profile",
+                  "yum -y install jq",
+                  "yum install bzip2-devel",
+                  "sudo su ec2-user -c \"curl https://ws-assets-prod-iad-r-iad-ed304a55c2ca1aee.s3.us-east-1.amazonaws.com/104a9291-764e-4e57-a548-b205bd4281c0/aws-generative-ai-for-documents-workshop-assets.zip -o /home/ec2-user/environment/aws-generative-ai-for-documents-workshop-assets.zip\"",
+                  "sudo su ec2-user -c \"unzip -o /home/ec2-user/environment/aws-generative-ai-for-documents-workshop-assets.zip -d /home/ec2-user/environment/\"",
+                  "sudo su ec2-user -c \"rm -f /home/ec2-user/environment/aws-generative-ai-for-documents-workshop-assets.zip\"",
+                  "sudo su - ec2-user -c \"cd /home/ec2-user/environment/environtment_setup;source update_python.sh\"",
+                  "sudo su - ec2-user -c \"/usr/bin/python3 -m pip install --upgrade awscli\"",
+                  "sudo su - ec2-user -c \"/usr/bin/python3 -m pip install --upgrade boto3\"",
+                  "sudo su - ec2-user -c \"cd /home/ec2-user/environment/environtment_setup;source cloud9_update_sg.sh\"",
+                  "sudo su - ec2-user -c \"cd /home/ec2-user/environment/environtment_setup;source resize.sh 50\"",
+                  "echo '=== CLEANING /home/ec2-user ==='",
+                  "rm -vf /home/ec2-user/.aws/credentials",
+                  "for f in cloud9; do rm -rf /home/ec2-user/$f; done",
+                  "chown -R ec2-user:ec2-user /home/ec2-user/",
+                  "echo '=== PREPARE REBOOT in 1 minute with at ==='",
+                  "FILE=$(mktemp) && echo $FILE && echo '#!/bin/bash' > $FILE && echo 'reboot -f' >> $FILE && at now + 1 minute -f $FILE",
+                  "echo \"Bootstrap completed with return code $?\""
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "WorkshopBootstrapAssociation": {
+      "Type": "AWS::SSM::Association",
+      "DependsOn": [
+        "WorkshopOutputBucket",
+        "WorkshopInstance",
+        "WorkshopBootstrapInstanceLambda"
+      ],
+      "Properties": {
+        "Name": {
+          "Ref": "WorkshopSSMDocument"
+        },
+        "OutputLocation": {
+          "S3Location": {
+            "OutputS3BucketName": {
+              "Ref": "WorkshopOutputBucket"
+            },
+            "OutputS3KeyPrefix": "bootstrapoutput"
+          }
+        },
+        "Targets": [
+          {
+            "Key": "tag:aws:cloud9:environment",
+            "Values": [
+              {
+                "Ref": "WorkshopInstance"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "WorkshopInstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [
+          {
+            "Ref": "WorkshopRole"
+          }
+        ]
+      }
+    },
+    "WorkshopInstance": {
+      "Type": "AWS::Cloud9::EnvironmentEC2",
+      "Properties": {
+        "Description": "AWS Cloud9 instance for Workshops",
+        "AutomaticStopTimeMinutes": 3600,
+        "ImageId": "amazonlinux-2-x86_64",
+        "InstanceType": "m5.large",
+        "Name": "aws-genai-workshop",
+        "OwnerArn": "arn:aws:sts::460359947939:assumed-role/WSParticipantRole/Participant",
+        "SubnetId": {
+          "Ref": "PublicSubnetA"
+        },
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "AWS Workshop"
+          }
+        ]
+      }
+    },
+    "S3VpcEndpoint": {
+      "Type": "AWS::EC2::VPCEndpoint",
+      "Properties": {
+        "VpcId": {
+          "Ref": "WorkshopVPC"
+        },
+        "ServiceName": "com.amazonaws.us-west-2.s3",
+        "RouteTableIds": [
+          {
+            "Ref": "PublicRouteTableA"
+          },
+          {
+            "Ref": "PublicRouteTableB"
+          },
+          {
+            "Ref": "PrivateRouteTableA"
+          },
+          {
+            "Ref": "PrivateRouteTableB"
+          }
+        ],
+        "VpcEndpointType": "Gateway"
+      }
+    },
+    "AmazonBedrockExecutionRoleForKnowledgeBase": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "AmazonBedrockExecutionRoleForKnowledgeBase_workshop_role",
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "bedrock.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/AmazonBedrockFullAccess",
+          "arn:aws:iam::aws:policy/AdministratorAccess"
+        ]
+      }
+    },
+    "SecretsManagerVPCEndpoint": {
+      "Type": "AWS::EC2::VPCEndpoint",
+      "Properties": {
+        "VpcId": {
+          "Ref": "WorkshopVPC"
+        },
+        "ServiceName": "com.amazonaws.us-west-2.secretsmanager",
+        "VpcEndpointType": "Interface",
+        "SubnetIds": [
+          {
+            "Ref": "PublicSubnetA"
+          },
+          {
+            "Ref": "PublicSubnetB"
+          },
+          {
+            "Ref": "PrivateSubnetA"
+          },
+          {
+            "Ref": "PrivateSubnetB"
+          }
+        ],
+        "PrivateDnsEnabled": true,
+        "SecurityGroupIds": [
+          {
+            "Ref": "VPCSecurityGroup"
+          }
+        ]
+      }
+    },
+    "WorkshopPostgreDBSubnetGroup": {
+      "Type": "AWS::RDS::DBSubnetGroup",
+      "Properties": {
+        "DBSubnetGroupDescription": "Subnet group for RDS instance",
+        "SubnetIds": [
+          {
+            "Ref": "PublicSubnetA"
+          },
+          {
+            "Ref": "PublicSubnetB"
+          }
+        ]
+      }
+    },
+    "WorkshopAuroraDBCluster": {
+      "Type": "AWS::RDS::DBCluster",
+      "Properties": {
+        "DBClusterIdentifier": "WorkshopDBCluster",
+        "Engine": "aurora-postgresql",
+        "EngineVersion": "15.5",
+        "MasterUsername": "workshopUser",
+        "MasterUserPassword": {
+          "Fn::Sub": "{{resolve:secretsmanager:${WorkshopPostgreRDSSecret}:SecretString:password}}"
+        },
+        "VpcSecurityGroupIds": [
+          {
+            "Ref": "VPCSecurityGroup"
+          }
+        ],
+        "DBSubnetGroupName": {
+          "Ref": "WorkshopPostgreDBSubnetGroup"
+        },
+        "EnableHttpEndpoint": true
+      }
+    },
+    "WorkshopAuroraDBInstance": {
+      "Type": "AWS::RDS::DBInstance",
+      "Properties": {
+        "DBInstanceIdentifier": "WorkshopDBInstance",
+        "DBInstanceClass": "db.r5.large",
+        "Engine": "aurora-postgresql",
+        "DBClusterIdentifier": {
+          "Ref": "WorkshopAuroraDBCluster"
+        },
+        "PubliclyAccessible": "false"
+      }
+    },
+    "WorkshopPostgreRDSSecret": {
+      "Type": "AWS::SecretsManager::Secret",
+      "Properties": {
+        "Name": "postgres_vectors_secrets",
+        "Description": "This is my RDS secret",
+        "GenerateSecretString": {
+          "SecretStringTemplate": "{\"username\": \"workshopUser\", \"port\": \"5432\", \"dbname\": \"vectordb\"}",
+          "GenerateStringKey": "password",
+          "PasswordLength": 16,
+          "ExcludeCharacters": "\"@/\\"
+        }
+      }
+    },
+    "MySQLRDSSecret": {
+      "Type": "AWS::SecretsManager::Secret",
+      "Properties": {
+        "Name": "mysql_secrets",
+        "Description": "This is my MySQL RDS secret",
+        "GenerateSecretString": {
+          "SecretStringTemplate": "{\"username\": \"mysqlUser\", \"port\": \"3306\", \"dbname\": \"sales\"}",
+          "GenerateStringKey": "password",
+          "PasswordLength": 16,
+          "ExcludeCharacters": "\"@/\\"
+        }
+      }
+    },
+    "MySQLDBInstance": {
+      "Type": "AWS::RDS::DBInstance",
+      "Properties": {
+        "DBInstanceIdentifier": "MySQLDBInstance",
+        "AllocatedStorage": "20",
+        "DBInstanceClass": "db.t3.micro",
+        "Engine": "mysql",
+        "MasterUsername": "mysqlUser",
+        "MasterUserPassword": {
+          "Fn::Sub": "{{resolve:secretsmanager:${MySQLRDSSecret}:SecretString:password}}"
+        },
+        "VPCSecurityGroups": [
+          {
+            "Ref": "VPCSecurityGroup"
+          }
+        ],
+        "DBSubnetGroupName": {
+          "Ref": "WorkshopPostgreDBSubnetGroup"
+        },
+        "PubliclyAccessible": "false"
+      }
+    },
+    "AOSSVpcEndpoint": {
+      "Type": "AWS::OpenSearchServerless::VpcEndpoint",
+      "Properties": {
+        "Name": "aoss-vpce",
+        "VpcId": {
+          "Ref": "WorkshopVPC"
+        },
+        "SubnetIds": [
+          {
+            "Ref": "PublicSubnetA"
+          },
+          {
+            "Ref": "PublicSubnetB"
+          },
+          {
+            "Ref": "PrivateSubnetA"
+          },
+          {
+            "Ref": "PrivateSubnetB"
+          }
+        ],
+        "SecurityGroupIds": [
+          {
+            "Ref": "VPCSecurityGroup"
+          }
+        ]
+      }
+    },
+    "WorkshopCollectionEncryptionPolicy": {
+      "Type": "AWS::OpenSearchServerless::SecurityPolicy",
+      "Properties": {
+        "Name": "workshop-enc-policy",
+        "Type": "encryption",
+        "Description": "Encryption policy for workshop-collection",
+        "Policy": "{\n  \"Rules\": [\n    {\n      \"ResourceType\": \"collection\",\n      \"Resource\": [\"collection/workshop-collection\"]\n    }\n  ],\n  \"AWSOwnedKey\": true\n}\n"
+      }
+    },
+    "WorkshopCollectionNetworkPolicy": {
+      "Type": "AWS::OpenSearchServerless::SecurityPolicy",
+      "Properties": {
+        "Name": "aoss-network-policy",
+        "Type": "network",
+        "Description": "Network policy for test collections",
+        "Policy": {
+          "Fn::Sub": [
+            "[\n   {\n      \"Description\": \"VPC access for log collections\",\n      \"Rules\": [\n         {\n            \"ResourceType\": \"collection\",\n            \"Resource\": [\"collection/workshop-collection\"]\n         }\n      ],\n      \"AllowFromPublic\": true\n   }\n]",
+            {
+              "VpcEndpoint": {
+                "Ref": "AOSSVpcEndpoint"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "WorkshopCollection": {
+      "Type": "AWS::OpenSearchServerless::Collection",
+      "DependsOn": "WorkshopCollectionEncryptionPolicy",
+      "Properties": {
+        "Name": "workshop-collection",
+        "Type": "VECTORSEARCH",
+        "Description": "OpenSearch Serverless Collection for workshop"
+      }
+    },
+    "AOSSAccessPolicy": {
+      "Type": "AWS::OpenSearchServerless::AccessPolicy",
+      "Properties": {
+        "Name": "aoss-access-policy",
+        "Type": "data",
+        "Description": "Access policy for aoss-collection",
+        "Policy": {
+          "Fn::Sub": [
+            "[\n  {\n    \"Description\": \"Access for test-user\",\n    \"Rules\": [\n      {\n        \"ResourceType\": \"index\",\n        \"Resource\": [\"index/*/*\"],\n        \"Permission\": [\"aoss:*\"]\n      },\n      {\n        \"ResourceType\": \"collection\",\n        \"Resource\": [\"collection/workshop-collection\"],\n        \"Permission\": [\"aoss:*\"]\n      }\n    ],\n    \"Principal\": [\"${WorkshopRoleArn}\",\"${AmazonBedrockExecutionRoleARN}\"]\n  }\n]\n",
+            {
+              "WorkshopRoleArn": {
+                "Fn::GetAtt": [
+                  "WorkshopRole",
+                  "Arn"
+                ]
+              },
+              "AmazonBedrockExecutionRoleARN": {
+                "Fn::GetAtt": [
+                  "AmazonBedrockExecutionRoleForKnowledgeBase",
+                  "Arn"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "OpenSearchServerlessSecret": {
+      "Type": "AWS::SecretsManager::Secret",
+      "Properties": {
+        "Name": "opensearch_serverless_secrets",
+        "Description": "This is my OpenSearch secret",
+        "SecretString": {
+          "Fn::Sub": [
+            "{\"host\": \"${Host}\", \"index_name\": \"workshop_index\"}",
+            {
+              "Host": {
+                "Fn::GetAtt": [
+                  "WorkshopCollection",
+                  "CollectionEndpoint"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "WorkshopKendraIndex": {
+      "Type": "AWS::Kendra::Index",
+      "Properties": {
+        "Name": "GenAIWorkshopKendraIndex",
+        "RoleArn": {
+          "Fn::GetAtt": [
+            "WorkshopRole",
+            "Arn"
+          ]
+        },
+        "Description": "Kendra index for searching documents",
+        "Edition": "DEVELOPER_EDITION"
+      }
+    },
+    "UUIDGeneratorFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Handler": "index.lambda_handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "WorkshopRole",
+            "Arn"
+          ]
+        },
+        "FunctionName": "UUIDGeneratorFunction",
+        "MemorySize": 1024,
+        "Timeout": 30,
+        "Code": {
+          "ZipFile": "import json\nimport uuid\nimport cfnresponse\ndef lambda_handler(event, context):\n  responseData = {}\n  responseData['UUID'] = str(uuid.uuid4())\n  cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData, \"CustomResourcePhysicalID\")\n  return status\n"
+        },
+        "Runtime": "python3.10"
+      }
+    },
+    "WorkshopKendraSecret": {
+      "Type": "AWS::SecretsManager::Secret",
+      "Properties": {
+        "Name": "kendra_secrets",
+        "Description": "This is kendra secret",
+        "SecretString": {
+          "Fn::Sub": [
+            "{\"index_id\": \"${IndexId}\"}",
+            {
+              "IndexId": {
+                "Fn::GetAtt": [
+                  "WorkshopKendraIndex",
+                  "Id"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "UUIDGenerator": {
+      "Type": "Custom::UUIDGenerator",
+      "Properties": {
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "UUIDGeneratorFunction",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "WorkshopPostgreS3Bucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": {
+          "Fn::Sub": "mybucketprefix-${UUIDGenerator.UUID}"
+        }
+      }
+    },
+    "OpenSearchS3Bucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": {
+          "Fn::Sub": "opensearchs3bucket-${UUIDGenerator.UUID}"
+        }
+      }
+    }
+  }
+}
