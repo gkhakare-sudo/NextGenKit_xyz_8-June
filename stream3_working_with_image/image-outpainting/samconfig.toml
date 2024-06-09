@@ -1,0 +1,9 @@
+version = 0.1
+[default.deploy.parameters]
+stack_name = "image-outpainting"
+resolve_s3 = true
+s3_prefix = "image-outpainting"
+region = "us-west-2"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "S3BucketName=\"image-outpainting\" ImagePrefix=\"image-files\" GeneratedImagePrefix=\"generated-image-files\" BedrockModelId=\"amazon.titan-image-generator-v1\""
+image_repositories = []

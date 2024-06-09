@@ -1,0 +1,9 @@
+version = 0.1
+[default.deploy.parameters]
+stack_name = "sensor-monitoring"
+resolve_s3 = true
+s3_prefix = "sensor-monitoring"
+region = "us-west-2"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "NotificationSNSTopicName=\"notification-topic\" NotificationEmail=\"gkhakare@gmail.com\" BedrockModelId=\"anthropic.claude-v2:1\""
+image_repositories = []

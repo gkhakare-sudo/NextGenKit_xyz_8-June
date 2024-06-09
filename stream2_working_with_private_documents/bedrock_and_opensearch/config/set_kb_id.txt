@@ -1,0 +1,7 @@
+Go to the AWS Secrets Manager Console 
+Click on opensearch_serverless_secrets secret
+Under Secret value click Retrieve secret value
+Then, click Edit
+Click + Add row
+For key type KNOWLEDGE_BASE_ID and for the value paste the value of KNOWLEDGE_BASE_ID printed in the terminal above
+Click Save
